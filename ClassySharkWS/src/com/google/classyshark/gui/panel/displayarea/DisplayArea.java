@@ -18,11 +18,21 @@ package com.google.classyshark.gui.panel.displayarea;
 
 import com.google.classyshark.gui.GuiMode;
 import com.google.classyshark.gui.panel.FileTransferHandler;
+import com.google.classyshark.gui.panel.ViewerController;
 import com.google.classyshark.gui.panel.displayarea.doodles.Doodle;
 import com.google.classyshark.gui.theme.Theme;
 import com.google.classyshark.silverghost.translator.Translator;
 import com.google.classyshark.silverghost.translator.java.JavaTranslator;
-import com.google.classyshark.gui.panel.ViewerController;
+
+import javax.swing.JFrame;
+import javax.swing.JTextPane;
+import javax.swing.WindowConstants;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DefaultStyledDocument;
+import javax.swing.text.Document;
+import javax.swing.text.Style;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.Utilities;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Toolkit;
@@ -33,15 +43,6 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.List;
 import java.util.StringTokenizer;
-import javax.swing.JFrame;
-import javax.swing.JTextPane;
-import javax.swing.WindowConstants;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.DefaultStyledDocument;
-import javax.swing.text.Document;
-import javax.swing.text.Style;
-import javax.swing.text.StyleConstants;
-import javax.swing.text.Utilities;
 
 /**
  * the area to display lists of classes and individual class
@@ -157,8 +158,18 @@ public class DisplayArea {
         return this.jTextPane;
     }
 
-    public void displayReducedClassNames(List<String> classNamesToShow,
-                                         String inputText) {
+    public void displayClassNames(List<String> classNamesToShow,
+                                  String inputText) {
+
+        StyleConstants.setFontSize(style, 18);
+        StyleConstants.setForeground(style, theme.getIdentifiersColor());
+        StyleConstants.setBackground(style, theme.getBackgroundColor());
+
+        if(classNamesToShow.size() > 50) {
+            displayAllClassesNames(classNamesToShow);
+            return;
+        }
+
         displayDataState = DisplayDataState.CLASSES_LIST;
 
         clearText();
@@ -168,10 +179,7 @@ public class DisplayArea {
         String beforeMatch = "";
         String match;
         String afterMatch = "";
-
-        StyleConstants.setFontSize(style, 18);
-        StyleConstants.setForeground(style, theme.getIdentifiersColor());
-
+        
         Document doc = jTextPane.getDocument();
 
         for (String className : classNamesToShow) {
@@ -193,6 +201,7 @@ public class DisplayArea {
                 doc.insertString(doc.getLength(), beforeMatch, style);
                 StyleConstants.setBackground(style, theme.getSelectionBgColor());
                 doc.insertString(doc.getLength(), match, style);
+                StyleConstants.setBackground(style, theme.getBackgroundColor());
                 doc.insertString(doc.getLength(), afterMatch + "\n", style);
             } catch (BadLocationException e) {
                 e.printStackTrace();
@@ -202,7 +211,7 @@ public class DisplayArea {
         jTextPane.setDocument(doc);
     }
 
-    public void displayAllClassesNames(List<String> classNames) {
+    private void displayAllClassesNames(List<String> classNames) {
         long start = System.currentTimeMillis();
 
         displayDataState = DisplayDataState.CLASSES_LIST;
@@ -283,13 +292,13 @@ public class DisplayArea {
                         StyleConstants.setForeground(style, theme.getAnnotationsColor());
                         break;
                     case XML_TAG:
-                        StyleConstants.setForeground(style, theme.getDefaultColor());
-                        break;
-                    case XML_ATTR_NAME:
                         StyleConstants.setForeground(style, theme.getIdentifiersColor());
                         break;
+                    case XML_ATTR_NAME:
+                        StyleConstants.setForeground(style, theme.getKeyWordsColor());
+                        break;
                     case XML_ATTR_VALUE:
-                        StyleConstants.setForeground(style, theme.getAnnotationsColor());
+                        StyleConstants.setForeground(style, theme.getDefaultColor());
                         break;
                     default:
                         StyleConstants.setForeground(style, Color.LIGHT_GRAY);
@@ -313,7 +322,7 @@ public class DisplayArea {
         Document doc = jTextPane.getStyledDocument();
 
         try {
-            StyleConstants.setForeground(style, theme.getDefaultColor());
+            StyleConstants.setForeground(style, theme.getIdentifiersColor());
             StyleConstants.setFontSize(style, 13);
             StyleConstants.setFontFamily(style, "Menlo");
 

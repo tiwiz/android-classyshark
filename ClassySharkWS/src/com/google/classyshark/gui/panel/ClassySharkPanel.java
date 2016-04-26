@@ -34,15 +34,7 @@ import com.google.classyshark.silverghost.exporter.Exporter;
 import com.google.classyshark.silverghost.methodscounter.ClassNode;
 import com.google.classyshark.silverghost.tokensmapper.ProguardMapper;
 import com.google.classyshark.silverghost.translator.Translator;
-import com.sun.deploy.util.GeneralUtil;
 
-import java.awt.BorderLayout;
-import java.awt.Dimension;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -53,6 +45,13 @@ import javax.swing.SwingWorker;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileFilter;
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * App controller, general app structure MVM ==> Model - View - Mediator (this class)
@@ -155,8 +154,8 @@ public class ClassySharkPanel extends JPanel
 
     @Override
     public void onGoBackPressed() {
-        displayArea.displayAllClassesNames(silverGhost.getAllClassNames());
         toolbar.setText("");
+        displayArea.displayClassNames(silverGhost.getAllClassNames(), "");
         silverGhost.initClassNameFiltering();
     }
 
@@ -435,7 +434,7 @@ public class ClassySharkPanel extends JPanel
                     } else if (filteredClassNames.size() == 0) {
                         displayArea.displayError();
                     } else {
-                        displayArea.displayReducedClassNames(filteredClassNames,
+                        displayArea.displayClassNames(filteredClassNames,
                                 textFromTypingArea);
                     }
                 }

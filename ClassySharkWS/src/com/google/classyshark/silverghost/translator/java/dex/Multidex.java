@@ -17,9 +17,10 @@
 package com.google.classyshark.silverghost.translator.java.dex;
 
 import com.google.classyshark.silverghost.contentreader.dex.DexReader;
+import com.google.classyshark.silverghost.io.SherlockHash;
+
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -39,7 +40,7 @@ public class Multidex {
 
             ZipEntry zipEntry;
 
-            int i = 0;
+            int dexIndex = 0;
             while (true) {
                 zipEntry = zipFile.getNextEntry();
 
@@ -48,41 +49,30 @@ public class Multidex {
                 }
 
                 if (zipEntry.getName().endsWith(".dex")) {
-                    file = File.createTempFile("classes" + i, "dex");
-                    file.deleteOnExit();
-                    i++;
-
-                    FileOutputStream fos =
-                            new FileOutputStream(file);
-                    byte[] bytes = new byte[1024];
-                    int length;
-                    while ((length = zipFile.read(bytes)) >= 0) {
-                        fos.write(bytes, 0, length);
+                    String fName = "classes";
+                    if(dexIndex > 0) {
+                        fName = fName + dexIndex;
                     }
+                    String ext = "dex";
 
-                    fos.close();
+                    file = SherlockHash.INSTANCE.getFileFromZipStream(apkFile,
+                            zipFile, fName, ext);
 
                     List<String> classNamesInDex =
                             DexReader.readClassNamesFromDex(file);
                     if (classNamesInDex.contains(className)) {
                         break;
                     }
+
+                    dexIndex++;
                 }
 
                 if (zipEntry.getName().endsWith("jar") || zipEntry.getName().endsWith("zip")) {
+                    String fName = "inner_zip";
+                    String ext = "zip";
 
-                    File innerZip = File.createTempFile("inner_zip", "zip");
-                    innerZip.deleteOnExit();
-
-                    FileOutputStream fos =
-                            new FileOutputStream(innerZip);
-                    byte[] bytes = new byte[1024];
-                    int length;
-                    while ((length = zipFile.read(bytes)) >= 0) {
-                        fos.write(bytes, 0, length);
-                    }
-
-                    fos.close();
+                    File innerZip = SherlockHash.INSTANCE.getFileFromZipStream(apkFile,
+                            zipFile, fName, ext);
 
                     // so far we have a zip file
                     ZipInputStream fromInnerZip = new ZipInputStream(new FileInputStream(
@@ -99,15 +89,10 @@ public class Multidex {
                         }
 
                         if (innerZipEntry.getName().endsWith(".dex")) {
-                            file = File.createTempFile("classes_innerzip", "dex");
-                            FileOutputStream fos1 = new FileOutputStream(file);
-                            byte[] bytes1 = new byte[1024];
-
-                            while ((length = fromInnerZip.read(bytes1)) >= 0) {
-                                fos1.write(bytes1, 0, length);
-                            }
-
-                            fos1.close();
+                            fName = "inner_zip_classes" + dexIndex;
+                            ext = "dex";
+                            file = SherlockHash.INSTANCE.getFileFromZipStream(apkFile, fromInnerZip,
+                                    fName, ext);
 
                             List<String> classNamesInDex =
                                     DexReader.readClassNamesFromDex(file);

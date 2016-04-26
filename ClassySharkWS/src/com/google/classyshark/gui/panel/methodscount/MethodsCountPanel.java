@@ -19,13 +19,11 @@ package com.google.classyshark.gui.panel.methodscount;
 import com.google.classyshark.gui.GuiMode;
 import com.google.classyshark.gui.panel.FileTransferHandler;
 import com.google.classyshark.gui.panel.ViewerController;
+import com.google.classyshark.gui.panel.tree.CellRenderer;
 import com.google.classyshark.gui.theme.Theme;
 import com.google.classyshark.silverghost.methodscounter.ClassNode;
 import com.google.classyshark.silverghost.methodscounter.RootBuilder;
-import java.awt.BorderLayout;
-import java.awt.Font;
-import java.awt.HeadlessException;
-import java.io.File;
+
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTree;
@@ -37,6 +35,10 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
+import java.awt.BorderLayout;
+import java.awt.Font;
+import java.awt.HeadlessException;
+import java.io.File;
 
 public class MethodsCountPanel extends JPanel {
     private DefaultTreeModel treeModel;
@@ -65,6 +67,7 @@ public class MethodsCountPanel extends JPanel {
         treeModel = new DefaultTreeModel(new DefaultMutableTreeNode(null));
         jTree = new JTree(treeModel);
         jTree.setRootVisible(false);
+        jTree.setCellRenderer(new CellRenderer());
         theme.applyTo(jTree);
 
         DefaultTreeCellRenderer cellRenderer = (DefaultTreeCellRenderer) jTree.getCellRenderer();

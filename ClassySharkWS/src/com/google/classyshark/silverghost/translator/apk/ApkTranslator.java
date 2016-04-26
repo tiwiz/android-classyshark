@@ -17,11 +17,19 @@
 package com.google.classyshark.silverghost.translator.apk;
 
 import com.google.classyshark.silverghost.contentreader.dex.DexlibLoader;
+import com.google.classyshark.silverghost.io.SherlockHash;
 import com.google.classyshark.silverghost.tokensmapper.ProguardMapper;
 import com.google.classyshark.silverghost.translator.Translator;
+import org.jf.dexlib2.dexbacked.DexBackedDexFile;
+import org.jf.dexlib2.iface.DexFile;
+import org.ow2.asmdex.ApplicationReader;
+import org.ow2.asmdex.ApplicationVisitor;
+import org.ow2.asmdex.ClassVisitor;
+import org.ow2.asmdex.MethodVisitor;
+import org.ow2.asmdex.Opcodes;
+
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -32,13 +40,6 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
-import org.jf.dexlib2.dexbacked.DexBackedDexFile;
-import org.jf.dexlib2.iface.DexFile;
-import org.ow2.asmdex.ApplicationReader;
-import org.ow2.asmdex.ApplicationVisitor;
-import org.ow2.asmdex.ClassVisitor;
-import org.ow2.asmdex.MethodVisitor;
-import org.ow2.asmdex.Opcodes;
 
 /**
  * Translator for the .apk entry
@@ -75,9 +76,8 @@ public class ApkTranslator implements Translator {
                             + dexData.allMethods
                             + "\nnative methods: "
                             + dexData.nativeMethodsCount
-                            + "\nabstract methods: "
-                            + dexData.abstractMethodsCount + "\n",
-                    TAG.ANNOTATION);
+                            + "\n",
+                    TAG.DOCUMENT);
             elements.add(element);
         }
 
@@ -88,7 +88,7 @@ public class ApkTranslator implements Translator {
 
         Collections.sort(apkAnalysis.nativeLibs);
         for (String nativeLib : apkAnalysis.nativeLibs) {
-            element = new ELEMENT(nativeLib, TAG.ANNOTATION);
+            element = new ELEMENT(nativeLib, TAG.DOCUMENT);
             elements.add(element);
         }
     }
@@ -106,9 +106,7 @@ public class ApkTranslator implements Translator {
     public static class DexData implements Comparable {
         public int index;
         public int nativeMethodsCount = 0;
-        public int abstractMethodsCount = 0;
         public Set<String> nativeMethodsClasses = new TreeSet<>();
-        public Set<String> abstractClasses = new TreeSet<>();
         public int allMethods = 0;
 
         public DexData(int index) {
@@ -129,24 +127,20 @@ public class ApkTranslator implements Translator {
                     "\nclasses" + index + ".dex"
                             + "\nnative methods: "
                             + nativeMethodsCount
-                            + "\nabstract methods: "
-                            + abstractMethodsCount
                             + "\nclasses with native methods"
-                            + nativeMethodsClasses
-                            + "\nclasses with abstract methods"
-                            + abstractClasses;
+                            + nativeMethodsClasses;
         }
     }
 
-    public static DexData fillAnalysis(int dexIndex, File file) throws Exception {
+    public static DexData fillAnalysis(int dexIndex, File file)  {
         DexData dexData = new DexData(dexIndex);
 
-        InputStream is = new FileInputStream(file);
-        ApplicationVisitor av = new ApkInspectVisitor(dexData);
-        ApplicationReader ar = new ApplicationReader(Opcodes.ASM4, is);
-        ar.accept(av, 0);
-
         try {
+            InputStream is = new FileInputStream(file);
+            ApplicationVisitor av = new ApkInspectVisitor(dexData);
+            ApplicationReader ar = new ApplicationReader(Opcodes.ASM4, is);
+            ar.accept(av, 0);
+
             DexFile dxFile = DexlibLoader.loadDexFile(file);
             DexBackedDexFile dataPack = (DexBackedDexFile) dxFile;
             dexData.allMethods = dataPack.getMethodCount();
@@ -187,18 +181,11 @@ public class ApkTranslator implements Translator {
                 }
 
                 if (zipEntry.getName().endsWith(".dex")) {
-                    File file = File.createTempFile("ANALYZER_classes" + dexIndex, "dex");
-                    file.deleteOnExit();
+                    String fName = "ANALYZER_classes" + dexIndex;
+                    String ext = "dex";
 
-                    FileOutputStream fos =
-                            new FileOutputStream(file);
-                    byte[] bytes = new byte[1024];
-                    int length;
-                    while ((length = zipFile.read(bytes)) >= 0) {
-                        fos.write(bytes, 0, length);
-                    }
-
-                    fos.close();
+                    File file = SherlockHash.INSTANCE.getFileFromZipStream(binaryArchiveFile,
+                            zipFile, fName, ext);
 
                     result.dexes.add(fillAnalysis(dexIndex, file));
 
@@ -246,10 +233,6 @@ public class ApkTranslator implements Translator {
                     if (Modifier.isNative(access)) {
                         dexData.nativeMethodsCount++;
                         dexData.nativeMethodsClasses.add(this.className);
-                    }
-                    if (Modifier.isAbstract(access)) {
-                        dexData.abstractMethodsCount++;
-                        dexData.abstractClasses.add(this.className);
                     }
 
                     return super.visitMethod(access, name, desc, signature, exceptions);
